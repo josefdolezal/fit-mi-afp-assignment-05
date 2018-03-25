@@ -12,8 +12,14 @@ data EventSource = Internal { iesComponent   :: String
                             , eesDescription :: String }
                  | Combined [EventSource]
                  | Unknown
-                 deriving (Show, Read, Eq, Ord)
+                 deriving (Read, Eq, Ord)
                  -- TODO: remove Ord here after implementing Ord for LogMessage
+
+instance Show EventSource where
+    show (Internal comp _)    = "Internal[" ++ comp ++ "]"
+    show (External uri _)     = "External[" ++ uri ++ "]"
+    show (Combined xs)        = "Combined[" ++ (intercalate "," $ map show xs) ++ "]"
+    show (Unknown)            = "Unknown"
 
 data LogMessage = LogMessage
                 { lmSource     :: EventSource
@@ -21,8 +27,12 @@ data LogMessage = LogMessage
                 , lmTimestamp  :: UTCTime
                 , lmHiddenFlag :: Bool
                 , lmLogLevel   :: LogLevel
-                } deriving (Show, Read, Eq, Ord)
+                } deriving (Read, Eq, Ord)
                 -- TODO: custom instance of Show and Ord (hidden, timestamp, logLevel)
+
+                -- [l] s: m
+instance Show LogMessage where
+    show (LogMessage s m _ _ l) = "[" ++ show l ++ "]" ++ " " ++ show s ++ ": " ++ m
 
 data EventSourceMatcher = Exact EventSource
                         | With EventSource
