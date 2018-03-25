@@ -36,11 +36,11 @@ instance Validable Quadrilateral where
 -- TODO: write instances for the types to compute circumference and area
 
 -- Note: this dummy functions should be placed in typeclass
-class Validable a => Computable a where
+class Validable a => Shape2D a where
   area          :: a -> Double
   circumference :: a -> Double
 
-instance Computable Circle where
+instance Shape2D Circle where
   area c@(Circle radius) = case (valid c) of
     True -> pi * radius^2
     _    -> 0
@@ -49,7 +49,7 @@ instance Computable Circle where
     True -> 2 * pi * radius
     _    -> 0
 
-instance Computable Triangle where
+instance Shape2D Triangle where
   area (EquilateralTriangle side)   = area (ScaleneTriangle side side side)
   area (IsoscelesTriangle base leg) = area (ScaleneTriangle base leg leg)
   area t@(ScaleneTriangle a b c)    = case (valid t) of
@@ -63,7 +63,7 @@ instance Computable Triangle where
     True -> a + b + c
     _    -> 0
 
-instance Computable Quadrilateral where
+instance Shape2D Quadrilateral where
   area (Square side)   = area (Rectangle side side)
   area q@(Rectangle a b) = case (valid q) of
     True -> a * b
