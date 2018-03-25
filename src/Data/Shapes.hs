@@ -20,7 +20,6 @@ data Quadrilateral = Square { sqSide :: Double}
 class Validable a where
   valid :: a -> Bool
 
--- TODO: complete instances for each type to check validity by `valid` function
 instance Validable Circle where 
   valid (Circle radius) = radius > 0
 
@@ -32,10 +31,7 @@ instance Validable Triangle where
 instance Validable Quadrilateral where 
   valid (Square side) = side > 0
   valid (Rectangle a b) = a > 0 && b > 0
--- TODO: create appropriate typeclass for 2D shapes (subclass of Validable)
--- TODO: write instances for the types to compute circumference and area
 
--- Note: this dummy functions should be placed in typeclass
 class Validable a => Shape2D a where
   area          :: a -> Double
   circumference :: a -> Double
@@ -73,4 +69,3 @@ instance Shape2D Quadrilateral where
   circumference r@(Rectangle a b) = case (valid r) of
     True -> 2 * (a + b)
     _    -> 0
-
