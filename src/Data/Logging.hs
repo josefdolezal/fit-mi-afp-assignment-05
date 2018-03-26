@@ -80,4 +80,8 @@ infixr 6 ~~
 
 -- | Specialized log list filter
 logFilter :: EventSourceMatcher -> LogLevel -> Bool -> [LogMessage] -> [LogMessage]
-logFilter m l h = filter (\x -> m ~~ (lmSource x) && l <= (lmLogLevel x) && (lmHiddenFlag x) == h)
+logFilter m l h = (filterHidden h) . (filterLogLevel l) . (filterMatcher m)
+    where filterHidden h   = filter (\x -> h == (lmHiddenFlag x))
+          filterLogLevel l = filter (\x -> l <= (lmLogLevel x))
+          filterMatcher m  = filter (\x -> m ~~ (lmSource x))
+          
