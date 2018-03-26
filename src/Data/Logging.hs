@@ -61,10 +61,22 @@ data EventSourceMatcher = Exact EventSource
 (@@) l r                         = Combined $ l:r:[]
 
 -- | Matching EventSource with EventSourceMatcher operator
--- TODO: implement matching
 infixr 6 ~~
 (~~) :: EventSourceMatcher -> EventSource -> Bool
-(~~) = undefined
+(~~) (Exact l) r                = l == r
+(~~) (With l) (Combined r)      = l `elem` r
+(~~) AnyInternal (Internal _ _) = True
+(~~) AnyInternal (Combined rs)  = not $ null $ filter isInternal rs
+    where isInternal (Internal _ _) = True
+          isInternal _              = False
+(~~) AnyExternal (External _ _) = True
+(~~) AnyExternal (Combined rs) = not $ null $ filter isExternal rs
+    where isExternal (External _ _) = True
+          isExternal _              = False
+(~~) Any _                      = True
+(~~) (MatchAny ls) r            = any (~~ r) ls
+(~~) (MatchAll ls) r            = all (~~ r) ls
+(~~) _ _                        = False
 
 -- | Specialized log list filter
 -- TODO: implement filter function for logs with matchers, log level and hidden flag
