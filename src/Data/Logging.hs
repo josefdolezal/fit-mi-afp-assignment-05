@@ -54,9 +54,11 @@ data EventSourceMatcher = Exact EventSource
 
 
 -- | EventSource "combinator"
--- TODO: implement operator which combines two EventSources (just 1 level for Combined, see tests)
 (@@) :: EventSource -> EventSource -> EventSource
-(@@) = undefined
+(@@) (Combined ls) (Combined rs) = Combined $ ls ++ rs
+(@@) l@(Combined _) rs           = l @@ (Combined $ rs:[])
+(@@) ls r@(Combined _)           = (Combined $ ls:[]) @@ r
+(@@) l r                         = Combined $ l:r:[]
 
 -- | Matching EventSource with EventSourceMatcher operator
 -- TODO: implement matching
