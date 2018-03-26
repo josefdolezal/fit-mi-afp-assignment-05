@@ -49,9 +49,8 @@ data EventSourceMatcher = Exact EventSource
                         deriving (Show, Read, Eq)
 
 -- | Change log level operator
--- TODO: implement operator which changes LogLevel of LogMessage
 ($=) :: LogMessage -> LogLevel -> LogMessage
-($=) = undefined
+($=) m l = m { lmLogLevel = l }
 
 
 -- | EventSource "combinator"
