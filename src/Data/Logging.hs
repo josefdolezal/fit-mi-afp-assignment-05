@@ -12,8 +12,7 @@ data EventSource = Internal { iesComponent   :: String
                             , eesDescription :: String }
                  | Combined [EventSource]
                  | Unknown
-                 deriving (Read, Eq, Ord)
-                 -- TODO: remove Ord here after implementing Ord for LogMessage
+                 deriving (Read, Eq)
 
 instance Show EventSource where
     show (Internal comp _)    = "Internal[" ++ comp ++ "]"
@@ -27,12 +26,18 @@ data LogMessage = LogMessage
                 , lmTimestamp  :: UTCTime
                 , lmHiddenFlag :: Bool
                 , lmLogLevel   :: LogLevel
-                } deriving (Read, Eq, Ord)
-                -- TODO: custom instance of Show and Ord (hidden, timestamp, logLevel)
+                } deriving (Read, Eq)
 
-                -- [l] s: m
 instance Show LogMessage where
     show (LogMessage s m _ _ l) = "[" ++ show l ++ "]" ++ " " ++ show s ++ ": " ++ m
+
+instance Ord LogMessage where
+    (<=) lhs rhs = case (lmHiddenFlag lhs, lmHiddenFlag rhs) of
+        (False, True) -> False
+        (True, False) -> True
+        _             -> case (lmLogLevel lhs /= lmLogLevel rhs) of
+                            True -> lmLogLevel lhs < lmLogLevel rhs
+                            _    -> lmTimestamp lhs <= lmTimestamp rhs
 
 data EventSourceMatcher = Exact EventSource
                         | With EventSource
