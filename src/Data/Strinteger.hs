@@ -37,27 +37,27 @@ integer2EngNumeral :: Integer -> Maybe String
 integer2EngNumeral n
     | n < 0     = (\x -> SH.negativePrefix ++ SH.separator ++ x) <$> integer2EngNumeral (-n)
     | n == 0    = Just SH.zero
-    | otherwise = Just $ intercalate SH.separator (translateScales n $ reverse SH.scales)
+    | otherwise = Just $ intercalate SH.separator (translateNumScales n $ reverse SH.scales)
 
-translateUnits :: Integer -> [String]
-translateUnits 0 = []
-translateUnits n = (requireWord 1 n):[]
+translateNumUnits :: Integer -> [String]
+translateNumUnits 0 = []
+translateNumUnits n = (requireWord 1 n):[]
 
-translateTens :: Integer -> [String]
-translateTens n
-    | n < 20    = translateUnits n
+translateNumTens :: Integer -> [String]
+translateNumTens n
+    | n < 20    = translateNumUnits n
     | otherwise = (flatten $ tens : units):[]
         where tens    = requireWord 10 $ n `div` 10
-              units   = translateUnits $ n `mod` 10
+              units   = translateNumUnits $ n `mod` 10
               flatten = intercalate SH.separatorTens
 
-translateScales :: Integer -> [(Integer, String)] -> [String]
-translateScales n ((d, t):xs)
-    | n < 100   = translateTens n
+translateNumScales :: Integer -> [(Integer, String)] -> [String]
+translateNumScales n ((d, t):xs)
+    | n < 100   = translateNumTens n
     | otherwise = case (n `div` 10^d) of
-        0 -> translateScales n xs
-        x -> (translateScales x xs) ++ t : (translateScales (n `mod` 10^d) xs)
-translateScales n _ = translateTens n
+        0 -> translateNumScales n xs
+        x -> (translateNumScales x xs) ++ t : (translateNumScales (n `mod` 10^d) xs)
+translateNumScales n _ = translateNumTens n
 
 requireWord :: Integer -> Integer -> String
 requireWord s n = case (SH.num2word s n) of
