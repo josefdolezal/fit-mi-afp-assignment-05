@@ -32,11 +32,37 @@ unpack (Strinteger numeral) = fromMaybe err (engNumeral2Integer numeral)
                               where
                                 err = error $ SH.messageBadNumeral numeral
 
-
 -- | Translate Integer to String (if possible)
--- TODO: implement Integer->String translation
 integer2EngNumeral :: Integer -> Maybe String
-integer2EngNumeral = undefined
+integer2EngNumeral n
+    | n < 0     = (\x -> SH.negativePrefix ++ SH.separator ++ x) <$> integer2EngNumeral (-n)
+    | n == 0    = Just SH.zero
+    | otherwise = Just $ intercalate SH.separator (translateScales n $ reverse SH.scales)
+
+translateUnits :: Integer -> [String]
+translateUnits 0 = []
+translateUnits n = (requireWord 1 n):[]
+
+translateTens :: Integer -> [String]
+translateTens n
+    | n < 20    = translateUnits n
+    | otherwise = (flatten $ tens : units):[]
+        where tens    = requireWord 10 $ n `div` 10
+              units   = translateUnits $ n `mod` 10
+              flatten = intercalate SH.separatorTens
+
+translateScales :: Integer -> [(Integer, String)] -> [String]
+translateScales n ((d, t):xs)
+    | n < 100   = translateTens n
+    | otherwise = case (n `div` 10^d) of
+        0 -> translateScales n xs
+        x -> (translateScales x xs) ++ t : (translateScales (n `mod` 10^d) xs)
+translateScales n _ = translateTens n
+
+requireWord :: Integer -> Integer -> String
+requireWord s n = case (SH.num2word s n) of
+    Just w  -> w
+    Nothing -> error $ SH.messageBadInteger n
 
 -- | Translate String to Integer (if possible)
 -- TODO: implement String->Integer translation
@@ -45,7 +71,7 @@ engNumeral2Integer = undefined
 
 -- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where
-    (==) = undefined
+    (==) l r = (unpack l) == (unpack r)
 
 instance Ord Strinteger where
     compare = undefined

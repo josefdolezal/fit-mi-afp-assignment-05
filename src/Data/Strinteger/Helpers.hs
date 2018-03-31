@@ -90,8 +90,8 @@ num2wordMap = unions [wordunits, wordtens, wordscales]
 num2word :: Integer -> Integer -> Maybe String
 num2word scale value = M.lookup (scale, value) num2wordMap
 
-separator = ' ' -- used between separate numerals
-separatorTens = '-' -- used to connect tens and units: sixty-six
+separator = " " -- used between separate numerals
+separatorTens = "-" -- used to connect tens and units: sixty-six
 negativePrefix = "minus"
 messageBadNumeral numeral = "Illegal English numeral: " ++ "'" ++ numeral ++ "'"
 messageBadInteger integer = "Uncovertable Integer: " ++ show integer
