@@ -67,7 +67,20 @@ requireWord s n = case (SH.num2word s n) of
 -- | Translate String to Integer (if possible)
 -- TODO: implement String->Integer translation
 engNumeral2Integer :: String -> Maybe Integer
-engNumeral2Integer = undefined
+engNumeral2Integer s = splitOn SH.separator 
+
+translateLitUnit :: String -> Integer
+translateLitUnit w = requireNumber
+
+translateLitTens :: String -> Maybe Integer
+translateLitTens w = case (splitOn SH.separatorTens w) of
+    (tens:units:[]) -> word2num tens
+    (tens:[])       ->
+
+requireNumber :: String -> Integer
+requireNumber w = case (SH.word2num w) of
+    Just (s, n) = 10^s * n
+    Nothing     = $ SH.messageBadNumeral w
 
 -- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where
