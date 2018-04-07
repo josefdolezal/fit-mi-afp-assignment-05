@@ -65,22 +65,21 @@ requireWord s n = case (SH.num2word s n) of
     Nothing -> error $ SH.messageBadInteger n
 
 -- | Translate String to Integer (if possible)
--- TODO: implement String->Integer translation
 engNumeral2Integer :: String -> Maybe Integer
-engNumeral2Integer s = splitOn SH.separator 
+engNumeral2Integer s = translateLiterals $ splitOn SH.separator s
 
-translateLitUnit :: String -> Integer
-translateLitUnit w = requireNumber
+translateLiterals :: [String] -> Maybe Integer
+translateLiterals xs = foldIntegerUnits <$> splitByMagnitude <$> mapM translateLitScales xs
 
-translateLitTens :: String -> Maybe Integer
-translateLitTens w = case (splitOn SH.separatorTens w) of
-    (tens:units:[]) -> word2num tens
-    (tens:[])       ->
+translateLitScales :: String -> Maybe Integer
+translateLitScales w = unwrap <$> SH.word2num w
+    where unwrap (s, n) = 10^s * n
 
-requireNumber :: String -> Integer
-requireNumber w = case (SH.word2num w) of
-    Just (s, n) = 10^s * n
-    Nothing     = $ SH.messageBadNumeral w
+splitByMagnitude :: [Integer] -> [[Integer]]
+splitByMagnitude = undefined
+
+foldIntegerUnits :: [[Integer]] -> Integer
+foldIntegerUnits = sum . map (foldl1 (*))
 
 -- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where
@@ -90,19 +89,19 @@ instance Ord Strinteger where
     compare = undefined
 
 instance Num Strinteger where
-    (+) = undefined
-    (*) = undefined
-    negate = undefined
-    abs = undefined
-    signum = undefined
-    fromInteger = undefined
+    (+) l r = undefined -- (unpack l) + (unpack r)
+    (*) l r = undefined --(unpack l) * (unpack r)
+    negate = undefined --negate . unpack
+    abs = undefined --abs . unpack
+    signum = undefined --signum . unpack
+    fromInteger = undefined --integer2EngNumeral
 
 instance Enum Strinteger where
     toEnum = undefined
-    fromEnum = undefined
+    fromEnum = undefined --pack . toInteger
 
 instance Real Strinteger where
-    toRational = undefined
+    toRational = undefined --toRational . unpack
 
 instance Integral Strinteger where
     quotRem = undefined
