@@ -4,6 +4,7 @@ import Data.Maybe
 -- You might need to use intercalate and splitOn (similar to words/unwords)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import Control.Monad (liftM2)
 
 -- Use Data.Strinteger.Helpers submodule
 -- In case of need, feel free to change or enhance Helpers or create own
@@ -63,16 +64,18 @@ translateNumScales n _ = translateNumTens n
 
 -- | Translate String to Integer (if possible)
 engNumeral2Integer :: String -> Maybe Integer
-engNumeral2Integer s = translateLiterals $ splitOn SH.separator s
+engNumeral2Integer s 
+    | s == SH.zero = Just 0
+    | otherwise = translateLiterals $ splitOn SH.separator s
 
 translateLiterals :: [String] -> Maybe Integer
 translateLiterals xs = case (SH.negativePrefix `elem` xs) of
     True  -> (*(-1)) <$> (translateLiterals $ tail xs)
-    False -> splitByMagnitude <$> mapM translateLitScales xs
+    False -> splitByMagnitude =<< mapM translateLitScales xs
 
 translateLitScales :: String -> Maybe Integer
 translateLitScales w = (singleNumber w) `fallback` (composedNumner w)
-    where singleNumber w = (unwrap <$> (SH.word2num w))
+    where singleNumber w = (unwrap <$> (limitedLookup w))
           composedNumner = translateTens
           unwrap (s, n) = s * n
 
@@ -81,12 +84,15 @@ translateTens s = case (splitOn SH.separatorTens s) of
     t@(x:y:[]) -> sum <$> mapM translateLitScales t
     _          -> Nothing
 
-splitByMagnitude :: [Integer] -> Integer
-splitByMagnitude []     = 0
-splitByMagnitude (x:[]) = x
-splitByMagnitude xs     = (max 1 $ splitByMagnitude ls) * highest + (splitByMagnitude $ tail rs)
-    where (ls, rs) = span (< highest) xs
-          highest  = maximum xs
+splitByMagnitude :: [Integer] -> Maybe Integer
+splitByMagnitude [] = Just 0
+splitByMagnitude xs = case (highest >= 100 && (length ls) < 1) of
+    True -> Nothing
+    _    -> liftM2 (+) leftSide rightSide
+    where rightSide = (* highest) <$> (max 1) <$> (splitByMagnitude ls)
+          leftSide  = splitByMagnitude $ tail rs 
+          (ls, rs)  = span (< highest) xs
+          highest   = maximum xs
 
 -- Lazily returns second argument if first is Nothing
 fallback :: Maybe a -> Maybe a -> Maybe a
@@ -95,6 +101,11 @@ fallback _ r          = r
 
 inBounds :: Integer -> Bool
 inBounds n = n >= (-SH.highestPossible) && n <= SH.highestPossible
+
+limitedLookup :: String -> Maybe (Integer, Integer)
+limitedLookup s
+    | s == SH.zero = Nothing
+    | otherwise    = SH.word2num s
 
 instance Eq Strinteger where
     (==) l r = (unpack l) == (unpack r)
