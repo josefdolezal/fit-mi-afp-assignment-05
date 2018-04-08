@@ -35,6 +35,7 @@ unpack (Strinteger numeral) = fromMaybe err (engNumeral2Integer numeral)
 -- | Translate Integer to String (if possible)
 integer2EngNumeral :: Integer -> Maybe String
 integer2EngNumeral n
+    | not . inBounds $ n = Nothing
     | n < 0     = (\x -> SH.negativePrefix ++ SH.separator ++ x) <$> integer2EngNumeral (-n)
     | n == 0    = Just SH.zero
     | otherwise = intercalate SH.separator <$> (translateNumScales n $ reverse SH.scales)
@@ -57,8 +58,7 @@ translateNumScales n ((d, t):xs)
     | otherwise = case (n `div` 10^d) of
         0 -> translateNumScales n xs
         x -> foldl1 (++) <$> sequence ds
-            where ds :: [Maybe [String]]
-                  ds = (translateNumScales x xs) : (Just [t]) : (translateNumScales (n `mod` 10^d) xs) : []
+            where ds = (translateNumScales x xs) : (Just [t]) : (translateNumScales (n `mod` 10^d) xs) : []
 translateNumScales n _ = translateNumTens n
 
 -- | Translate String to Integer (if possible)
@@ -92,6 +92,9 @@ splitByMagnitude xs     = (max 1 $ splitByMagnitude ls) * highest + (splitByMagn
 fallback :: Maybe a -> Maybe a -> Maybe a
 fallback a@(Just _) _ = a
 fallback _ r          = r
+
+inBounds :: Integer -> Bool
+inBounds n = n >= (-SH.highestPossible) && n <= SH.highestPossible
 
 instance Eq Strinteger where
     (==) l r = (unpack l) == (unpack r)
