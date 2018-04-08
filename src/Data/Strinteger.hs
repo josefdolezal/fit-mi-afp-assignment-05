@@ -20,7 +20,7 @@ instance Bounded Strinteger where
    maxBound = pack SH.highestPossible
    minBound = negate maxBound
 
-   -- | Pack Integer into Strinteger (English numeral string)
+-- | Pack Integer into Strinteger (English numeral string)
 pack :: Integer -> Strinteger
 pack integer = Strinteger $ fromMaybe err (integer2EngNumeral integer)
                where
@@ -93,28 +93,28 @@ fallback :: Maybe a -> Maybe a -> Maybe a
 fallback a@(Just _) _ = a
 fallback _ r          = r
 
--- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where
     (==) l r = (unpack l) == (unpack r)
 
 instance Ord Strinteger where
-    compare = undefined
+    compare l r = compare (unpack l) (unpack r)
 
 instance Num Strinteger where
-    (+) l r = undefined -- (unpack l) + (unpack r)
-    (*) l r = undefined --(unpack l) * (unpack r)
-    negate = undefined --negate . unpack
-    abs = undefined --abs . unpack
-    signum = undefined --signum . unpack
-    fromInteger = undefined --integer2EngNumeral
+    (+) l r = pack $ (unpack l) + (unpack r)
+    (*) l r = pack $ (unpack l) * (unpack r)
+    negate = pack . negate . unpack
+    abs = pack . abs . unpack
+    signum = pack . signum . unpack
+    fromInteger = pack
 
 instance Enum Strinteger where
-    toEnum = undefined
-    fromEnum = undefined --pack . toInteger
+    toEnum = pack . toInteger
+    fromEnum = fromIntegral . unpack
 
 instance Real Strinteger where
-    toRational = undefined --toRational . unpack
+    toRational = toRational . unpack
 
 instance Integral Strinteger where
-    quotRem = undefined
-    toInteger = undefined
+    quotRem l r = (bin quot l r, bin rem l r)
+        where bin op l r = pack $ (unpack l) `op` (unpack r)
+    toInteger = unpack
