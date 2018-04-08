@@ -69,7 +69,9 @@ engNumeral2Integer :: String -> Maybe Integer
 engNumeral2Integer s = translateLiterals $ splitOn SH.separator s
 
 translateLiterals :: [String] -> Maybe Integer
-translateLiterals xs = foldIntegerUnits <$> splitByMagnitude <$> mapM translateLitScales xs
+translateLiterals xs = case (SH.negativePrefix `elem` xs) of
+    True  -> (*(-1)) <$> (translateLiterals $ tail xs)
+    False -> splitByMagnitude <$> mapM translateLitScales xs
 
 translateLitScales :: String -> Maybe Integer
 translateLitScales w = (singleNumber w) `fallback` (composedNumner w)
@@ -82,34 +84,17 @@ translateTens s = case (splitOn SH.separatorTens s) of
     t@(x:y:[]) -> sum <$> mapM translateLitScales t
     _          -> Nothing
 
-splitByMagnitude :: [Integer] -> [[Integer]]
-splitByMagnitude = splitSeq magnitudeGrouping
-    where magnitudeGrouping a b = b < a
-
-foldIntegerUnits :: [[Integer]] -> Integer
-foldIntegerUnits = sum . map (foldl1 (*))
+splitByMagnitude :: [Integer] -> Integer
+splitByMagnitude []     = 0
+splitByMagnitude (x:[]) = x
+splitByMagnitude xs     = (max 1 $ splitByMagnitude ls) * highest + (splitByMagnitude $ tail rs)
+    where (ls, rs) = span (< highest) xs
+          highest  = maximum xs
 
 -- Lazily returns second argument if first is Nothing
 fallback :: Maybe a -> Maybe a -> Maybe a
 fallback a@(Just _) _ = a
 fallback _ r          = r
-
--- Splits the list on comparator recursively
--- Example: [1,2,1,2,1,2] -> [[1,2], [1,2], [1,2]]
-splitSeq :: (a -> a -> Bool) -> [a] -> [[a]]
-splitSeq _ [] = []
-splitSeq cmp xs = ls : (splitSeq cmp rs)
-    where (ls, rs) = splitBy cmp xs
-
--- Splits the list if the comparator for two neighbor items returns true
--- Example: [1,2,3,4,1,2,1] -> ([1,2,3,4], [1,2,1])
-splitBy :: (a -> a -> Bool) -> [a] -> ([a], [a])
-splitBy _ []         = ([], [])
-splitBy _ l@(x:[])   = (l, [])
-splitBy cmp (x:xs@(y:ys)) = case (cmp x y) of
-    True  -> (x:[], xs)
-    False -> (x:[] ++ ls, rs)
-    where (ls, rs) = splitBy cmp xs
 
 -- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where
