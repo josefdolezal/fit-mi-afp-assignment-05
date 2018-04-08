@@ -72,14 +72,44 @@ translateLiterals :: [String] -> Maybe Integer
 translateLiterals xs = foldIntegerUnits <$> splitByMagnitude <$> mapM translateLitScales xs
 
 translateLitScales :: String -> Maybe Integer
-translateLitScales w = unwrap <$> SH.word2num w
-    where unwrap (s, n) = 10^s * n
+translateLitScales w = (singleNumber w) `fallback` (composedNumner w)
+    where singleNumber w = (unwrap <$> (SH.word2num w))
+          composedNumner = translateTens
+          unwrap (s, n) = s * n
+
+translateTens :: String -> Maybe Integer
+translateTens s = case (splitOn SH.separatorTens s) of
+    t@(x:y:[]) -> sum <$> mapM translateLitScales t
+    _          -> Nothing
 
 splitByMagnitude :: [Integer] -> [[Integer]]
-splitByMagnitude = undefined
+splitByMagnitude = splitSeq magnitudeGrouping
+    where magnitudeGrouping a b = b < a
 
 foldIntegerUnits :: [[Integer]] -> Integer
 foldIntegerUnits = sum . map (foldl1 (*))
+
+-- Lazily returns second argument if first is Nothing
+fallback :: Maybe a -> Maybe a -> Maybe a
+fallback a@(Just _) _ = a
+fallback _ r          = r
+
+-- Splits the list on comparator recursively
+-- Example: [1,2,1,2,1,2] -> [[1,2], [1,2], [1,2]]
+splitSeq :: (a -> a -> Bool) -> [a] -> [[a]]
+splitSeq _ [] = []
+splitSeq cmp xs = ls : (splitSeq cmp rs)
+    where (ls, rs) = splitBy cmp xs
+
+-- Splits the list if the comparator for two neighbor items returns true
+-- Example: [1,2,3,4,1,2,1] -> ([1,2,3,4], [1,2,1])
+splitBy :: (a -> a -> Bool) -> [a] -> ([a], [a])
+splitBy _ []         = ([], [])
+splitBy _ l@(x:[])   = (l, [])
+splitBy cmp (x:xs@(y:ys)) = case (cmp x y) of
+    True  -> (x:[], xs)
+    False -> (x:[] ++ ls, rs)
+    where (ls, rs) = splitBy cmp xs
 
 -- TODO: implement Strinteger instances of Num, Ord, Eq, Enum, Real, and Integral
 instance Eq Strinteger where

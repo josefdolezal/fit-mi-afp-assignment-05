@@ -72,7 +72,7 @@ word2numMap = unions [numunits, numtens, numscales]
              where
                numunits  = M.fromList [(str, ( 1, value)) | (value, str) <- units]
                numtens   = M.fromList [(str, (10, value)) | (value, str) <- tens]
-               numscales = M.fromList [(str, (10^scale, 0)) | (scale, str) <- scales]
+               numscales = M.fromList [(str, (10^scale, 1)) | (scale, str) <- scales]
 
 -- | Translate word to (scale, value) tuple if defined
 word2num :: String -> Maybe (Integer, Integer)
