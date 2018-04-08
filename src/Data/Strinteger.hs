@@ -37,32 +37,29 @@ integer2EngNumeral :: Integer -> Maybe String
 integer2EngNumeral n
     | n < 0     = (\x -> SH.negativePrefix ++ SH.separator ++ x) <$> integer2EngNumeral (-n)
     | n == 0    = Just SH.zero
-    | otherwise = Just $ intercalate SH.separator (translateNumScales n $ reverse SH.scales)
+    | otherwise = intercalate SH.separator <$> (translateNumScales n $ reverse SH.scales)
 
-translateNumUnits :: Integer -> [String]
-translateNumUnits 0 = []
-translateNumUnits n = (requireWord 1 n):[]
+translateNumUnits :: Integer -> Maybe [String]
+translateNumUnits 0 = Just []
+translateNumUnits n = (:[]) <$> SH.num2word 1 n
 
-translateNumTens :: Integer -> [String]
+translateNumTens :: Integer -> Maybe [String]
 translateNumTens n
     | n < 20    = translateNumUnits n
-    | otherwise = (flatten $ tens : units):[]
-        where tens    = requireWord 10 $ n `div` 10
+    | otherwise = flatten <$> (sequence $ tens:units:[])
+        where tens    = (:[]) <$> (SH.num2word 10 $ n `div` 10)
               units   = translateNumUnits $ n `mod` 10
-              flatten = intercalate SH.separatorTens
+              flatten = (:[]) . (intercalate SH.separatorTens) . (foldl1 (++))
 
-translateNumScales :: Integer -> [(Integer, String)] -> [String]
+translateNumScales :: Integer -> [(Integer, String)] -> Maybe [String]
 translateNumScales n ((d, t):xs)
     | n < 100   = translateNumTens n
     | otherwise = case (n `div` 10^d) of
         0 -> translateNumScales n xs
-        x -> (translateNumScales x xs) ++ t : (translateNumScales (n `mod` 10^d) xs)
+        x -> foldl1 (++) <$> sequence ds
+            where ds :: [Maybe [String]]
+                  ds = (translateNumScales x xs) : (Just [t]) : (translateNumScales (n `mod` 10^d) xs) : []
 translateNumScales n _ = translateNumTens n
-
-requireWord :: Integer -> Integer -> String
-requireWord s n = case (SH.num2word s n) of
-    Just w  -> w
-    Nothing -> error $ SH.messageBadInteger n
 
 -- | Translate String to Integer (if possible)
 engNumeral2Integer :: String -> Maybe Integer
