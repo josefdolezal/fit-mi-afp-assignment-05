@@ -72,7 +72,7 @@ word2numMap = unions [numunits, numtens, numscales]
              where
                numunits  = M.fromList [(str, ( 1, value)) | (value, str) <- units]
                numtens   = M.fromList [(str, (10, value)) | (value, str) <- tens]
-               numscales = M.fromList [(str, (10^scale, 0)) | (scale, str) <- scales]
+               numscales = M.fromList [(str, (10^scale, 1)) | (scale, str) <- scales]
 
 -- | Translate word to (scale, value) tuple if defined
 word2num :: String -> Maybe (Integer, Integer)
@@ -90,8 +90,8 @@ num2wordMap = unions [wordunits, wordtens, wordscales]
 num2word :: Integer -> Integer -> Maybe String
 num2word scale value = M.lookup (scale, value) num2wordMap
 
-separator = ' ' -- used between separate numerals
-separatorTens = '-' -- used to connect tens and units: sixty-six
+separator = " " -- used between separate numerals
+separatorTens = "-" -- used to connect tens and units: sixty-six
 negativePrefix = "minus"
 messageBadNumeral numeral = "Illegal English numeral: " ++ "'" ++ numeral ++ "'"
 messageBadInteger integer = "Uncovertable Integer: " ++ show integer

@@ -12,8 +12,13 @@ data EventSource = Internal { iesComponent   :: String
                             , eesDescription :: String }
                  | Combined [EventSource]
                  | Unknown
-                 deriving (Show, Read, Eq, Ord)
-                 -- TODO: remove Ord here after implementing Ord for LogMessage
+                 deriving (Read, Eq)
+
+instance Show EventSource where
+    show (Internal comp _)    = "Internal[" ++ comp ++ "]"
+    show (External uri _)     = "External[" ++ uri ++ "]"
+    show (Combined xs)        = "Combined[" ++ (intercalate "," $ map show xs) ++ "]"
+    show (Unknown)            = "Unknown"
 
 data LogMessage = LogMessage
                 { lmSource     :: EventSource
@@ -21,8 +26,18 @@ data LogMessage = LogMessage
                 , lmTimestamp  :: UTCTime
                 , lmHiddenFlag :: Bool
                 , lmLogLevel   :: LogLevel
-                } deriving (Show, Read, Eq, Ord)
-                -- TODO: custom instance of Show and Ord (hidden, timestamp, logLevel)
+                } deriving (Read, Eq)
+
+instance Show LogMessage where
+    show (LogMessage s m _ _ l) = "[" ++ show l ++ "]" ++ " " ++ show s ++ ": " ++ m
+
+instance Ord LogMessage where
+    (<=) lhs rhs = case (lmHiddenFlag lhs, lmHiddenFlag rhs) of
+        (False, True) -> False
+        (True, False) -> True
+        _             -> case (lmLogLevel lhs /= lmLogLevel rhs) of
+                            True -> lmLogLevel lhs < lmLogLevel rhs
+                            _    -> lmTimestamp lhs <= lmTimestamp rhs
 
 data EventSourceMatcher = Exact EventSource
                         | With EventSource
@@ -34,23 +49,39 @@ data EventSourceMatcher = Exact EventSource
                         deriving (Show, Read, Eq)
 
 -- | Change log level operator
--- TODO: implement operator which changes LogLevel of LogMessage
 ($=) :: LogMessage -> LogLevel -> LogMessage
-($=) = undefined
+($=) m l = m { lmLogLevel = l }
 
 
 -- | EventSource "combinator"
--- TODO: implement operator which combines two EventSources (just 1 level for Combined, see tests)
 (@@) :: EventSource -> EventSource -> EventSource
-(@@) = undefined
+(@@) (Combined ls) (Combined rs) = Combined $ ls ++ rs
+(@@) l@(Combined _) rs           = l @@ (Combined $ rs:[])
+(@@) ls r@(Combined _)           = (Combined $ ls:[]) @@ r
+(@@) l r                         = Combined $ l:r:[]
 
 -- | Matching EventSource with EventSourceMatcher operator
--- TODO: implement matching
 infixr 6 ~~
 (~~) :: EventSourceMatcher -> EventSource -> Bool
-(~~) = undefined
+(~~) (Exact l) r                = l == r
+(~~) (With l) (Combined r)      = l `elem` r
+(~~) AnyInternal (Internal _ _) = True
+(~~) AnyInternal (Combined rs)  = not $ null $ filter isInternal rs
+    where isInternal (Internal _ _) = True
+          isInternal _              = False
+(~~) AnyExternal (External _ _) = True
+(~~) AnyExternal (Combined rs) = not $ null $ filter isExternal rs
+    where isExternal (External _ _) = True
+          isExternal _              = False
+(~~) Any _                      = True
+(~~) (MatchAny ls) r            = any (~~ r) ls
+(~~) (MatchAll ls) r            = all (~~ r) ls
+(~~) _ _                        = False
 
 -- | Specialized log list filter
--- TODO: implement filter function for logs with matchers, log level and hidden flag
 logFilter :: EventSourceMatcher -> LogLevel -> Bool -> [LogMessage] -> [LogMessage]
-logFilter  = undefined
+logFilter m l h = (filterHidden h) . (filterLogLevel l) . (filterMatcher m)
+    where filterHidden h   = filter (\x -> h == (lmHiddenFlag x))
+          filterLogLevel l = filter (\x -> l <= (lmLogLevel x))
+          filterMatcher m  = filter (\x -> m ~~ (lmSource x))
+          
